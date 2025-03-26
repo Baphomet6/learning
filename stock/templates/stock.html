@@ -1,16 +1,26 @@
 {% extends 'base.html' %}
 {% block content %}
-    <div>
-        Акции {{ stock.name }} ({{ stock.ticker }}) <img src="{{ MEDIA_URL }}/{{ stock.logo }}" width="40" />
+    <div class="stock-header">
+        <h2>{{ stock.name }} ({{ stock.ticker }})</h2>
+        <img src="{{ MEDIA_URL }}{{ stock.logo.url }}" width="60" alt="{{ stock.ticker }}">
     </div>
-    <div>
-        <form method="POST" action="{% url 'stock:buy' stock.pk %}">
+
+    <div class="current-price">
+        Текущая цена: {{ stock.get_random_price }}{{ stock.currency.sign }}
+    </div>
+
+    <div class="trade-form">
+        <h3>{% if mode == 'buy' %}Покупка{% else %}Продажа{% endif %} акций</h3>
+        <form method="POST" action="{% if mode == 'buy' %}{% url 'stock:buy' stock.pk %}{% else %}{% url 'stock:sell' stock.pk %}{% endif %}">
             {% csrf_token %}
-            {{ form }}
-            <button>Купить</button>
+            {{ form.as_p }}
+            <button type="submit" class="btn {% if mode == 'buy' %}btn-success{% else %}btn-danger{% endif %}">
+                {% if mode == 'buy' %}Купить{% else %}Продать{% endif %}
+            </button>
         </form>
     </div>
-    <div>
-        <a href="{% url 'stock:list' %}">Назад к списку</a>
+
+    <div class="back-link">
+        <a href="{% url 'stock:list' %}" class="btn btn-secondary">Назад к списку</a>
     </div>
 {% endblock %}

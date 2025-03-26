@@ -14,12 +14,15 @@
             <tr>
                 <td>
                     {% if stock.logo %}
-                    <img src="{{ MEDIA_URL }}/{{ stock.logo }}" width="40" /></td>
+                    <img src="{{ MEDIA_URL }}{{ stock.logo.url }}" width="40" alt="{{ stock.ticker }}">
                     {% endif %}
+                </td>
                 <td>{{ stock.ticker }}</td>
                 <td>{{ stock.name }}</td>
-                <td>{{ stock.get_random_price }}{{ stock.currency.sign }}
-                    <a href="{% url 'stock:detail' stock.pk %}">Купить</a> <!-- ссылка на страницу с формой покупки -->
+                <td>{{ stock.get_random_price }}{{ stock.currency.sign }}</td>
+                <td class="actions">
+                    <a href="{% url 'stock:detail' stock.pk 'buy' %}" class="btn btn-sm btn-success">Купить</a>
+                    <a href="{% url 'stock:detail' stock.pk 'sell' %}" class="btn btn-sm btn-danger">Продать</a>
                 </td>
             </tr>
         {% endfor %}

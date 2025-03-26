@@ -1,11 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
-
 from stock.models import Stock, AccountCurrency, AccountStock
 from stock.forms import BuySellForm
-
 from django.contrib.auth.decorators import login_required
-
 from django.core.cache import cache
+from django.contrib import messages
 
 
 
@@ -17,11 +15,12 @@ def stock_list(request):
     return render(request, 'stocks.html', context)
 
 @login_required
-def stock_detail(request, pk):
+def stock_detail(request, pk, mode='buy'):
     stock = get_object_or_404(Stock, pk=pk)
     context = {
         'stock': stock,
-        'form': BuySellForm(initial={'price': stock.get_random_price()})
+        'form': BuySellForm(initial={'price': stock.get_random_price()}),
+        'mode': mode
     }
     return render(request, 'stock.html', context)
 
@@ -97,6 +96,48 @@ def account(request):
     }
 
     return render(request, template_name='account.html', context=context)
+
+@login_required
+def stock_sell(request, pk):
+    if request.method != "POST":
+        return redirect('stock:detail', pk=pk)
+
+    stock = get_object_or_404(Stock, pk=pk)
+    form = BuySellForm(request.POST)
+
+    if form.is_valid():
+        amount = form.cleaned_data['amount']
+        price = form.cleaned_data['price']
+        sell_amount = amount
+
+        try:
+            acc_stock = AccountStock.objects.get(account=request.user.account, stock=stock)
+            acc_currency = AccountCurrency.objects.get(account=request.user.account, currency=stock.currency)
+
+            if acc_stock.amount < sell_amount:
+                messages.error(request, f'У вас недостаточно акций {stock.ticker} для продажи')
+            else:
+                sell_sum = price * sell_amount
+                acc_stock.amount -= sell_amount
+
+                if acc_stock.amount == 0:
+                    acc_stock.average_buy_cost = 0
+
+                acc_currency.amount += sell_sum
+                acc_stock.save()
+                acc_currency.save()
+                messages.success(request, f'Успешно продано {sell_amount} акций {stock.ticker}')
+                return redirect('stock:list')
+
+        except AccountStock.DoesNotExist:
+            messages.error(request, f'У вас нет акций {stock.ticker} для продажи')
+
+    context = {
+        'stock': stock,
+        'form': form,
+        'mode': 'sell'
+    }
+    return render(request, 'stock.html', context)
 
 
 
